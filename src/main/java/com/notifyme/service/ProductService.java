@@ -24,8 +24,20 @@ public class ProductService {
 
         // 레디스 캐시에 저장 (Key: "product:restockRound:{productId}")
         redisTemplate.opsForValue().set("product:restockRound:"+productId, product.getRestockRound());
-
         return product.getRestockRound(); //증가시킨 회차 반환
+    }
+
+    public Product findProductById(Long productId){
+        Product product = productRepository.findById(productId).orElseThrow(()->new NotifymeException(NotifymeErrorCode.NO_PRODUCT));
+        return product;
+    }
+
+    public Product.StockStatus getStockStatus(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NotifymeException(NotifymeErrorCode.NO_PRODUCT));
+
+        //상품의 재고 상태 반환
+        return product.getStockStatus();
     }
 
 
