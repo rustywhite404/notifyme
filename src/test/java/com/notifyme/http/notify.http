@@ -1,0 +1,3 @@
+### 알림 발송 API
+POST http://localhost:8080/products/1/notifications/re-stock
+Content-Type: application/x-www-form-urlencoded
