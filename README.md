@@ -25,4 +25,26 @@
  
 5. 애플리케이션은 http://localhost:8080 에서 실행됩니다. 
 
----
+---  
+
+### 알림 발송 처리 전, 회차 데이터 정합성 처리
+
+- **문제 상황** :  
+주어진 조건에 따르면 `/products/{productId}/notifications/re-stock` 가 호출되었을 때 상품의 재입고 회차를 증가시킨 후, 알림 발송을 요청한 사용자들에게 메시지를 발송(ProductNotificationHistory에 저장)해야 합니다. 이 때 ProductNotificationHistory에 갱신된 재입고 회차가 함께 저장되어야 하므로 트랜잭션이 종료되지 않은 상태에서도 갱신 된 재입고 회차가 반영되어야 한다고 판단했습니다.
+ 
+- **해결 전략** :  
+레디스에 최신 회차를 저장하고 즉시 조회하여 트랜잭션 내에서 갱신된 데이터를 바로 사용할 수 있도록 처리했습니다. 레디스를 사용할 수 없는 상황이라면 `Propagation.REQUIRES_NEW` 를 사용해서 처리했을 것 같습니다.
+
+   ```java  
+   @Transactional
+       public int increaseRestockRound(Long productId){
+           // 상품 회차 증가
+           Product product = productRepository.findById(productId).orElseThrow(()->new NotifymeException(NotifymeErrorCode.NO_PRODUCT));
+           product.setRestockRound(product.getRestockRound()+1);
+   
+           // 레디스 캐시에 저장 (Key: "product:restockRound:{productId}")
+           redisTemplate.opsForValue().set("product:restockRound:"+productId, product.getRestockRound());
+           return product.getRestockRound(); //증가시킨 회차 반환
+       }
+ 
+
