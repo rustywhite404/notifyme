@@ -6,13 +6,18 @@ import com.notifyme.repository.ProductRepository;
 import com.notifyme.repository.ProductUserNotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.times;
+
 
 @SpringBootTest
 public class NotificationServiceTest {
@@ -33,7 +38,7 @@ public class NotificationServiceTest {
     }
 
     @Test
-    public void testCodePerformance() {
+    public void testCodePerformance() throws InterruptedException {
         // 코드 실행 시간 측정
         long startTime = System.nanoTime();
         notificationService.restockAndNotify(productId);
@@ -41,6 +46,7 @@ public class NotificationServiceTest {
 
         System.out.println("Code Execution Time: " + (endTime - startTime) / 1_000_000 + " ms");
     }
+
 
     private Long prepareTestData() {
         // 1. 상품 생성

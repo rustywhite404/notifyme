@@ -24,7 +24,7 @@ public class ProductService {
         int retryCount = 0;
         while (retryCount < 3) {
             try {
-                // 상품 회차  +1, 저장 시 낙관적 락 적용
+                // 상품 회차  +1
                 product.setRestockRound(product.getRestockRound() + 1);
                 productRepository.save(product);
                 return product.getRestockRound(); //증가시킨 회차 반환

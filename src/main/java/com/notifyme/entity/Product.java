@@ -18,9 +18,6 @@ public class Product {
     @Enumerated(EnumType.STRING)
     private StockStatus stockStatus; //재고 상태
 
-    @Version
-    private Long version; //낙관적 락을 위한 버전 필드
-
     public enum StockStatus{
         IN_STOCK, OUT_OF_STOCK;
     }

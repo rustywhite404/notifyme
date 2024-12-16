@@ -12,8 +12,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
     private final NotificationService notificationService;
     @PostMapping(value = "/{productId}/notifications/re-stock")
-    public void sendNotifyMessage(@PathVariable("productId") Long productId) {
-        log.info("-------------productId: {}", productId);
+    public void sendNotifyMessage(@PathVariable("productId") Long productId) throws InterruptedException {
         notificationService.restockAndNotify(productId);
     }
 

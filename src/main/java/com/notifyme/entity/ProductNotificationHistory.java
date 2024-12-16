@@ -10,6 +10,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class ProductNotificationHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

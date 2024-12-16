@@ -10,6 +10,7 @@ import com.notifyme.repository.ProductUserNotificationHistoryRepository;
 import com.notifyme.repository.ProductUserNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.google.common.util.concurrent.RateLimiter;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,9 @@ public class NotificationService {
     private final ProductUserNotificationHistoryRepository productUserNotificationHistoryRepository;
     private final RedisTemplate<String, String> redisTemplate;
 
+    // 1초에 500개의 알림 발송을 제한
+    private final RateLimiter rateLimiter = RateLimiter.create(5);
+
     @Transactional
     public void restockAndNotify(Long productId) {
         //1. 재입고 회차 증가 및 OUT_OF_STOCK -> IN_STOCK 상태 변경
@@ -47,6 +51,8 @@ public class NotificationService {
 
         //4. 알림을 신청한 유저들에게 알림을 발송하고 상품ID, 유저ID, 재입고회차, 발송 날짜를 ProductUserNotificationHistory에 저장한다.
         for (ProductUserNotification user : notifiedUsers) {
+            // 레이트 리미터로 초당 500명씩 처리 제한
+            rateLimiter.acquire();
             try {
                 // 상품의 재고 상태 확인
                 if (!isStockAvailable(productId)) {
@@ -146,7 +152,7 @@ public class NotificationService {
         productNotificationHistoryRepository.save(history);
     }
 
-    private void sendNotification(ProductUserNotification user, int newRestockRound) {
+    protected void sendNotification(ProductUserNotification user, int newRestockRound) {
         // 알림 발송 로직. 비즈니스 요구 조건에서 따로 요구사항이 없어 로그만 기록
         log.info("알림 발송 - 상품 ID: {}, 유저 ID: {}, 재입고 회차: {}",
                 user.getProduct().getId(),
