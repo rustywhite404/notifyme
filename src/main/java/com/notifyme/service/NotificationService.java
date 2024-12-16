@@ -14,8 +14,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,8 +31,8 @@ public class NotificationService {
 
     @Transactional
     public void restockAndNotify(Long productId) {
-        //1. 재입고 회차 증가
-        int newRestockRound = productService.increaseRestockRound(productId);
+        //1. 재입고 회차 증가 및 OUT_OF_STOCK -> IN_STOCK 상태 변경
+        int newRestockRound = productService.increaseRestockRoundAndUpdateStockStatus(productId);
 
         //2. ProductNotificationHistory의 해당 상품에 재입고 회차를 갱신하고, 알림 발송 상태를 IN_PROGRESS로 갱신한다.
         updateNotificationHistory(productId, newRestockRound, NotifyStatus.IN_PROGRESS, null);
@@ -95,7 +93,7 @@ public class NotificationService {
     }
 
     @Async
-    private void saveUserNotificationHistoriesInBatch(List<ProductUserNotificationHistory> batchHistories) {
+    protected void saveUserNotificationHistoriesInBatch(List<ProductUserNotificationHistory> batchHistories) {
         try {
             log.info("배치 작업 비동기 시작: {}건의 유저 알림 히스토리 저장 중...", batchHistories.size());
             productUserNotificationHistoryRepository.saveAll(batchHistories);
@@ -146,16 +144,6 @@ public class NotificationService {
 
         // 저장
         productNotificationHistoryRepository.save(history);
-
-        // 트랜잭션 동기화: Redis 상태 반영
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
-            @Override
-            public void afterCommit() {
-                String redisKey = "product:notificationStatus:" + productId + ":" + restockRound;
-                redisTemplate.opsForValue().set(redisKey, status.name());
-                log.info("Redis에 알림 상태 저장 - Key: {}, 상태: {}", redisKey, status);
-            }
-        });
     }
 
     private void sendNotification(ProductUserNotification user, int newRestockRound) {
