@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -33,7 +34,6 @@ public class NotificationService {
     // 1초에 500개의 알림 발송을 제한
     private final RateLimiter rateLimiter = RateLimiter.create(5);
 
-    @Transactional
     public void restockAndNotify(Long productId) {
         //1. 재입고 회차 증가 및 OUT_OF_STOCK -> IN_STOCK 상태 변경
         int newRestockRound = productService.increaseRestockRoundAndUpdateStockStatus(productId);
@@ -99,6 +99,7 @@ public class NotificationService {
     }
 
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected void saveUserNotificationHistoriesInBatch(List<ProductUserNotificationHistory> batchHistories) {
         try {
             log.info("배치 작업 비동기 시작: {}건의 유저 알림 히스토리 저장 중...", batchHistories.size());
@@ -122,6 +123,7 @@ public class NotificationService {
         return "IN_STOCK".equals(stockStatus);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     private void updateNotificationHistory(Long productId, int restockRound, NotifyStatus status, Long lastSentUserId) {
 
         // Product 객체 조회
