@@ -59,11 +59,9 @@ public class NotificationService {
 
                 // 발송 성공 : ProductNotificationHistory 업데이트
                 lastSuccessfulUserId = user.getUserId(); // 성공한 유저 ID 추적
-                updateNotificationHistory(user.getProduct().getId(), newRestockRound, NotifyStatus.COMPLETED, lastSuccessfulUserId);
 
                 // 발송 성공 : ProductUserNotificationHistory 업데이트
                 updateUserNotificationHistory(user, newRestockRound);
-
 
             } catch (Exception e) {
                 // 예외 발생 시 상태 업데이트
@@ -93,7 +91,6 @@ public class NotificationService {
                 .restockRound(restockRound)
                 .sendAt(LocalDateTime.now())
                 .build();
-
         productUserNotificationHistoryRepository.save(history);
     }
 
