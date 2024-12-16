@@ -11,12 +11,14 @@ import com.notifyme.repository.ProductUserNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -42,6 +44,9 @@ public class NotificationService {
 
         Long lastSuccessfulUserId = null; // 마지막으로 성공한 유저 ID 추적
         boolean allNotificationsSuccessful = true; // 모든 알림 성공 여부 확인
+
+        List<ProductUserNotificationHistory> batchHistories = new ArrayList<>(); //한 번에 히스토리를 저장하도록 처리
+
         //4. 알림을 신청한 유저들에게 알림을 발송하고 상품ID, 유저ID, 재입고회차, 발송 날짜를 ProductUserNotificationHistory에 저장한다.
         for (ProductUserNotification user : notifiedUsers) {
             try {
@@ -57,11 +62,16 @@ public class NotificationService {
                 // 알림 발송
                 sendNotification(user, newRestockRound);
 
-                // 발송 성공 : ProductNotificationHistory 업데이트
-                lastSuccessfulUserId = user.getUserId(); // 성공한 유저 ID 추적
+                // 성공한 유저 ID 추적
+                lastSuccessfulUserId = user.getUserId();
 
-                // 발송 성공 : ProductUserNotificationHistory 업데이트
-                updateUserNotificationHistory(user, newRestockRound);
+                // 발송 성공 : ProductUserNotificationHistory 생성 후 배치 리스트에 추가
+                batchHistories.add(ProductUserNotificationHistory.builder()
+                        .product(user.getProduct())
+                        .userId(user.getUserId())
+                        .restockRound(newRestockRound)
+                        .sendAt(LocalDateTime.now())
+                        .build());
 
             } catch (Exception e) {
                 // 예외 발생 시 상태 업데이트
@@ -70,6 +80,10 @@ public class NotificationService {
                 allNotificationsSuccessful = false;
                 break;
             }
+        }
+        //4. 배치로 ProductUserNotificationHistory 저장
+        if(!batchHistories.isEmpty()){
+            saveUserNotificationHistoriesInBatch(batchHistories);
         }
 
         // 5. 모든 알림 발송이 성공적으로 완료된 경우에만 COMPLETED 상태로 업데이트
@@ -80,18 +94,15 @@ public class NotificationService {
 
     }
 
-    private void updateUserNotificationHistory(ProductUserNotification user, int restockRound) {
-
-        Product product = productService.findProductById(user.getProduct().getId());
-
-        // 발송 히스토리 저장
-        ProductUserNotificationHistory history = ProductUserNotificationHistory.builder()
-                .product(product)
-                .userId(user.getUserId())
-                .restockRound(restockRound)
-                .sendAt(LocalDateTime.now())
-                .build();
-        productUserNotificationHistoryRepository.save(history);
+    @Async
+    private void saveUserNotificationHistoriesInBatch(List<ProductUserNotificationHistory> batchHistories) {
+        try {
+            log.info("배치 작업 비동기 시작: {}건의 유저 알림 히스토리 저장 중...", batchHistories.size());
+            productUserNotificationHistoryRepository.saveAll(batchHistories);
+            log.info("배치 작업 비동기 완료: {}건의 유저 알림 히스토리 저장 성공", batchHistories.size());
+        } catch (Exception e) {
+            log.error("유저 알림 히스토리 배치 저장 중 예외 발생: {}", e.getMessage(), e);
+        }
     }
 
     private boolean isStockAvailable(Long productId) {
