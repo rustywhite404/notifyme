@@ -136,7 +136,7 @@ for (ProductUserNotification user : notifiedUsers) {
         }
     ```
   Code Execution Time: 937 ms  
-  현재 상태에서도 1초에 500명에게 메시지 발송은 가능하지만 조금만 더 초당 발송 요구량이 증가해도 아슬아슬할 것 같다. 그리고 한 사람에게 알림을 보낼 때 마다 updateUserNotificationHistory(user, newRestockRound);를 호출하고 있어 DB에 너무 잦은 접근이 필요하다. 한 번에 모아서 배치 처리하고 이 작업을 비동기로 실행시켜 메인 로직의 성능을 개선시키기로 했다.
+  현재 상태에서도 1초에 500명에게 메시지 발송은 가능하지만 조금만 더 초당 발송 요구량이 증가해도 아슬아슬할 것 같다. 그리고 한 사람에게 알림을 보낼 때 마다 updateUserNotificationHistory(user, newRestockRound);를 호출하고 있어 커넥션 풀에서 커넥션을 가져왔다가 반환하는 동작이 500번 일어난다. 한 번에 모아서 배치 처리하고 이 작업을 비동기로 실행시켜 메인 로직의 성능을 개선시키기로 했다.
 
     ```java
     @Transactional
@@ -177,7 +177,7 @@ for (ProductUserNotification user : notifiedUsers) {
     ```
 
   Code Execution Time: 695 ms  
-  **개선 결과 :** Code Execution Time 937 ms → 695 ms 으로 수행시간 단축, DB 커넥션 500 → 1로 감소   
+  **개선 결과 :** Code Execution Time 937 ms → 695 ms 으로 수행시간 단축, DB 커넥션 풀 사용 횟수 500 → 1로 감소   
 
 ---
 
