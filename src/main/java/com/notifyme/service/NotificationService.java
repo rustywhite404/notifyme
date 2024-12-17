@@ -32,7 +32,7 @@ public class NotificationService {
     private final RedisTemplate<String, String> redisTemplate;
 
     // 1초에 500개의 알림 발송을 제한
-    private final RateLimiter rateLimiter = RateLimiter.create(5);
+    private final RateLimiter rateLimiter = RateLimiter.create(500);
 
     public void restockAndNotify(Long productId) {
         //1. 재입고 회차 증가 및 OUT_OF_STOCK -> IN_STOCK 상태 변경
@@ -85,12 +85,12 @@ public class NotificationService {
                 break;
             }
         }
-        //4. 배치로 ProductUserNotificationHistory 저장
+        //5. 배치로 ProductUserNotificationHistory 저장
         if(!batchHistories.isEmpty()){
             saveUserNotificationHistoriesInBatch(batchHistories);
         }
 
-        // 5. 모든 알림 발송이 성공적으로 완료된 경우에만 COMPLETED 상태로 업데이트
+        //6. 모든 알림 발송이 성공적으로 완료된 경우에만 COMPLETED 상태로 업데이트
         if (allNotificationsSuccessful) {
             updateNotificationHistory(productId, newRestockRound, NotifyStatus.COMPLETED, lastSuccessfulUserId);
             log.info("모든 알림 발송 성공 - 상품 ID: {}, 재입고 회차: {}", productId, newRestockRound);
