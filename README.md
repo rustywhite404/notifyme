@@ -176,7 +176,43 @@ for (ProductUserNotification user : notifiedUsers) {
         }
     ```
 
-  Code Execution Time: 695 ms
-    
-  ---
-  **개선 결과 :** Code Execution Time 937 ms → 695 ms 으로 수행시간 단축, DB 커넥션 500 → 1로 감소
+  Code Execution Time: 695 ms  
+  **개선 결과 :** Code Execution Time 937 ms → 695 ms 으로 수행시간 단축, DB 커넥션 500 → 1로 감소   
+
+---
+
+- **Custom ErrorCode로 Exception Handling**
+
+  원시 에러 메시지를 그대로 반환하는 것은 보안상 좋지 않으므로 자주 발생할 수 있는 예외들은 ExceptionHandler를 통해 따로 에러 코드를 관리하도록 처리했다.
+
+  ```java
+  @AllArgsConstructor
+  @Getter
+  public enum NotifymeErrorCode {
+      
+      NO_PRODUCT("상품이 존재하지 않습니다."),
+      INTERNAL_SERVER_ERROR("서버에 오류가 발생했습니다."),
+      INVALID_REQUEST("잘못된 요청입니다"),
+      REDIS_ROCK_ERROR("레디스 락 처리 중 문제가 발생했습니다."),
+      LOCK_ACQUISITION_ERROR("락 획득 중 문제가 발생했습니다."),
+      OPTIMISTIC_LOCK_FAIL_INCREASE_ROUND("재입고 회차를 증가시키던 중 충돌이 발생했습니다. 잠시 후 다시 시도해주세요."),
+      RESOURCE_LOCK_FAILURE("리소스 잠금에 실패했습니다.");
+      
+      private final String message;
+  }
+  ```
+
+  ```java
+  (...) 
+  //기타 서버 장애가 발생한 경우
+      @ExceptionHandler(Exception.class)
+      public NotifymeErrorResponse handleException(Exception ex, HttpServletRequest req){
+          log.error("url: {}, message: {}", req.getRequestURI(), ex.getMessage());
+      
+          return NotifymeErrorResponse.builder()
+                  .errorCode(NotifymeErrorCode.INTERNAL_SERVER_ERROR)
+                  .errorMessage(NotifymeErrorCode.INTERNAL_SERVER_ERROR.getMessage())
+                  .build();
+      }
+  ```
+---  
