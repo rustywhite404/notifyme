@@ -2,7 +2,8 @@
 
 ## 📢 프로젝트 소개
 
-- 상품이 재입고 되었을 때, 재입고 알림을 설정한 유저들에게 재입고 알림을 보내줍니다.  
+상품이 재입고 되었을 때, 재입고 알림을 설정한 유저들에게 재입고 알림을 보내줍니다.  
+
 ![Java 17](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white) ![Spring 3.x](https://img.shields.io/badge/Spring-6DB33F?style=for-the-badge&logo=spring&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![MySQL 8.0](https://img.shields.io/badge/MySQL-00000F?style=for-the-badge&logo=mysql&logoColor=white) ![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
 
 <details>
@@ -12,7 +13,6 @@
 
 </details>
 
---- 
 ## 📢 프로젝트 실행 방법  
 
 <details>
@@ -44,8 +44,6 @@
 
 
 </details>
-
----
 
 ## 📢 비즈니스 로직
 
@@ -109,7 +107,6 @@ for (ProductUserNotification user : notifiedUsers) {
 	          (...) 
 ```
 
----
 
 ## 📢 추가 기술적 고민
 
@@ -138,10 +135,7 @@ for (ProductUserNotification user : notifiedUsers) {
     			(...) 
         }
     ```
-  Code Execution Time: 937 ms
-    
-  ---
-
+  Code Execution Time: 937 ms  
   현재 상태에서도 1초에 500명에게 메시지 발송은 가능하지만 조금만 더 초당 발송 요구량이 증가해도 아슬아슬할 것 같다. 그리고 한 사람에게 알림을 보낼 때 마다 updateUserNotificationHistory(user, newRestockRound);를 호출하고 있어 DB에 너무 잦은 접근이 필요하다. 한 번에 모아서 배치 처리하고 이 작업을 비동기로 실행시켜 메인 로직의 성능을 개선시키기로 했다.
 
     ```java
